@@ -1,0 +1,16 @@
+Index: source/org/jivesoftware/smackx/muc/MultiUserChat.java
+===================================================================
+--- source/org/jivesoftware/smackx/muc/MultiUserChat.java	(revision 12558)
++++ source/org/jivesoftware/smackx/muc/MultiUserChat.java	(working copy)
+@@ -363,7 +363,10 @@
+         // Look for confirmation of room creation from the server
+         MUCUser mucUser = getMUCUserExtension(presence);
+         if (mucUser != null && mucUser.getStatus() != null) {
+-            if ("201".equals(mucUser.getStatus().getCode())) {
++            if ("201".equals(mucUser.getStatus().getCode())
++                || "210".equals(mucUser.getStatus().getCode())
++                || "100".equals(mucUser.getStatus().getCode())
++                || "110".equals(mucUser.getStatus().getCode())) {
+                 // Room was created and the user has joined the room
+                 return;
+             }
