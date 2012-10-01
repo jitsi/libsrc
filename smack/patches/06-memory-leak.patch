@@ -1,10 +1,7 @@
 Index: source/org/jivesoftware/smackx/ChatStateManager.java
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
 ===================================================================
 --- source/org/jivesoftware/smackx/ChatStateManager.java	(revision 12975)
-+++ source/org/jivesoftware/smackx/ChatStateManager.java	(revision )
++++ source/org/jivesoftware/smackx/ChatStateManager.java	(working copy)
 @@ -30,6 +30,7 @@
  import org.jivesoftware.smack.packet.PacketExtension;
  import org.jivesoftware.smackx.packet.ChatStateExtension;
@@ -43,3 +40,46 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
  
              return manager;
          }
+@@ -151,10 +155,10 @@
+         return false;
+     }
+ 
+-    private void fireNewChatState(Chat chat, ChatState state) {
++    private void fireNewChatState(Chat chat, ChatState state, Message message) {
+         for (MessageListener listener : chat.getListeners()) {
+             if (listener instanceof ChatStateListener) {
+-                ((ChatStateListener) listener).stateChanged(chat, state);
++                ((ChatStateListener) listener).stateChanged(chat, state, message);
+             }
+         }
+     }
+@@ -194,7 +198,7 @@
+                 return;
+             }
+ 
+-            fireNewChatState(chat, state);
++            fireNewChatState(chat, state, message);
+         }
+     }
+ }
+Index: source/org/jivesoftware/smackx/ChatStateListener.java
+===================================================================
+--- source/org/jivesoftware/smackx/ChatStateListener.java	(revision 12975)
++++ source/org/jivesoftware/smackx/ChatStateListener.java	(working copy)
+@@ -22,6 +22,7 @@
+ 
+ import org.jivesoftware.smack.Chat;
+ import org.jivesoftware.smack.MessageListener;
++import org.jivesoftware.smack.packet.Message;
+ 
+ /**
+  * Events for when the state of a user in a chat changes.
+@@ -35,6 +36,7 @@
+      *
+      * @param chat the chat in which the state has changed.
+      * @param state the new state of the participant.
++     * @param message the parent message containing the chat state change
+      */
+-    void stateChanged(Chat chat, ChatState state);
++    void stateChanged(Chat chat, ChatState state, Message message);
+ }
