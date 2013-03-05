@@ -1,0 +1,15 @@
+Index: source/org/jivesoftware/smackx/provider/VCardProvider.java
+===================================================================
+--- source/org/jivesoftware/smackx/provider/VCardProvider.java	(revision 12558)
++++ source/org/jivesoftware/smackx/provider/VCardProvider.java	(revision )
+@@ -163,7 +163,9 @@
+                         code = nodeName;
+                     }
+                 }
+-                if (code == null || value == null) continue;
++                if (value == null) continue;
++                if(code == null)
++                    code = "VOICE";
+                 if ("HOME".equals(type)) {
+                     vCard.setPhoneHome(code, value);
+                 }
