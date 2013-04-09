@@ -1,25 +1,14 @@
 Index: source/org/jivesoftware/smack/XMPPConnection.java
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
 ===================================================================
---- source/org/jivesoftware/smack/XMPPConnection.java	(revision 12975)
-+++ source/org/jivesoftware/smack/XMPPConnection.java	(revision )
-@@ -30,6 +30,7 @@
- import javax.net.ssl.KeyManagerFactory;
- import javax.net.ssl.SSLContext;
- import javax.net.ssl.SSLSocket;
-+import javax.net.ssl.X509TrustManager;
- import javax.security.auth.callback.Callback;
- import javax.security.auth.callback.CallbackHandler;
- import javax.security.auth.callback.PasswordCallback;
+--- source/org/jivesoftware/smack/XMPPConnection.java	(revision 12558)
++++ source/org/jivesoftware/smack/XMPPConnection.java	(working copy)
 @@ -78,6 +79,11 @@
      Roster roster = null;
  
      /**
-+     * Custom trust manager.
++     * Custom SSL Context to inject TrustStore, KeyManager and TrustManager.
 +     */
-+    private X509TrustManager customTrustManager = null;
++    private SSLContext customSslContext = null;
 +
 +    /**
       * Collection of available stream compression methods offered by the server.
@@ -30,35 +19,44 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
      }
  
 +     /**
-+      * Set custom trust manager.
++      * Set custom SSL Context.
 +      *
-+      * @param customTrustManager
++      * @param customSslContext the custom SSL context to use for new connections.
 +      */
-+     public void setCustomTrustManager(X509TrustManager customTrustManager)
++     public void setCustomSslContext(SSLContext customSslContext)
 +     {
-+         this.customTrustManager = customTrustManager;
++         this.customSslContext = customSslContext;
 +     }
 +
      @Override
      public synchronized void login(String username, String password, String resource) throws XMPPException {
          if (!isConnected()) {
-@@ -791,13 +807,21 @@
+@@ -728,7 +744,6 @@
+      * @throws Exception if an exception occurs.
+      */
+     void proceedTLSReceived() throws Exception {
+-        SSLContext context = SSLContext.getInstance("TLS");
+         KeyStore ks = null;
+         KeyManager[] kms = null;
+         PasswordCallback pcb = null;
+@@ -791,13 +806,22 @@
          }
  
          // Verify certificate presented by the server
-+        if(customTrustManager == null)
 -        context.init(kms,
-+            context.init(kms,
 -                new javax.net.ssl.TrustManager[]{new ServerTrustManager(getServiceName(), config)},
+-                new java.security.SecureRandom());
++        SSLContext context;
++        if(customSslContext == null) {
++            context = SSLContext.getInstance("TLS");
++            context.init(kms,
 +                    new javax.net.ssl.TrustManager[]{
 +                            new ServerTrustManager(getServiceName(), config)},
--                new java.security.SecureRandom());
 +                    new java.security.SecureRandom());
-+         else
-+             context.init(kms,
-+                     new javax.net.ssl.TrustManager[]{
-+                         customTrustManager},
-+                     new java.security.SecureRandom());
++        }
++        else {
++             context = customSslContext;
++        }
 +
          Socket plain = socket;
          // Secure the plain connection
@@ -68,11 +66,10 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
          socket.setSoTimeout(0);
          socket.setKeepAlive(true);
          // Initialize the reader and writer with the new secured version
-@@ -981,5 +1005,14 @@
-         if (!this.wasAuthenticated) {
+@@ -982,4 +1006,13 @@
              this.wasAuthenticated = wasAuthenticated;
          }
-+    }
+     }
 +
 +    /**
 +     * The currently used socket.
@@ -81,5 +78,5 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 +    public Socket getSocket()
 +    {
 +        return socket;
-     }
++    }
  }
