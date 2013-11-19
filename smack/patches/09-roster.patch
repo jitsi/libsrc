@@ -1,0 +1,74 @@
+Index: source/org/jivesoftware/smack/RosterListener.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- source/org/jivesoftware/smack/RosterListener.java	(revision 12558)
++++ source/org/jivesoftware/smack/RosterListener.java	(revision )
+@@ -20,7 +20,9 @@
+ 
+ package org.jivesoftware.smack;
+ 
++import org.jivesoftware.smack.packet.Packet;
+ import org.jivesoftware.smack.packet.Presence;
++import org.jivesoftware.smack.packet.XMPPError;
+ 
+ import java.util.Collection;
+ 
+@@ -80,4 +82,11 @@
+      * @see Roster#getPresence(String)
+      */
+     public void presenceChanged(Presence presence);
++
++    /**
++     * Notifies for errors in roster packets.
++     * @param error the error.
++     * @param packet the source packet containing the error.
++     */
++    public void rosterError(XMPPError error, Packet packet);
+ }
+\ No newline at end of file
+Index: source/org/jivesoftware/smack/Roster.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- source/org/jivesoftware/smack/Roster.java	(revision 12558)
++++ source/org/jivesoftware/smack/Roster.java	(revision )
+@@ -27,6 +27,7 @@
+ import org.jivesoftware.smack.packet.Packet;
+ import org.jivesoftware.smack.packet.Presence;
+ import org.jivesoftware.smack.packet.RosterPacket;
++import org.jivesoftware.smack.packet.XMPPError;
+ import org.jivesoftware.smack.util.StringUtils;
+ 
+ import java.util.*;
+@@ -657,6 +658,15 @@
+     }
+ 
+     /**
++     * Fires roster error event to roster listeners indicating that an error occurred.
++     */
++    private void fireRosterChangedEvent(XMPPError error, Packet packet) {
++        for (RosterListener listener : rosterListeners) {
++            listener.rosterError(error, packet);
++        }
++    }
++
++    /**
+      * Fires roster presence changed event to roster listeners.
+      *
+      * @param presence the presence change.
+@@ -814,6 +824,12 @@
+     private class RosterPacketListener implements PacketListener {
+ 
+         public void processPacket(Packet packet) {
++            if (packet.getError() != null)
++            {
++                fireRosterChangedEvent(packet.getError(), packet);
++                return;
++            }
++
+             // Keep a registry of the entries that were added, deleted or updated. An event
+             // will be fired for each affected entry
+             Collection<String> addedEntries = new ArrayList<String>();
