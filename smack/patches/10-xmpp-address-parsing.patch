@@ -1,0 +1,32 @@
+diff --git a/source/org/jivesoftware/smack/util/StringUtils.java b/source/org/jivesoftware/smack/util/StringUtils.java
+--- a/source/org/jivesoftware/smack/util/StringUtils.java
++++ b/source/org/jivesoftware/smack/util/StringUtils.java
+@@ -92,6 +92,9 @@
+         if (XMPPAddress == null) {
+             return null;
+         }
++
++        XMPPAddress = parseBareAddress(XMPPAddress);
++
+         int atIndex = XMPPAddress.lastIndexOf("@");
+         if (atIndex <= 0) {
+             return "";
+@@ -113,15 +116,14 @@
+         if (XMPPAddress == null) {
+             return null;
+         }
++
++        XMPPAddress = parseBareAddress(XMPPAddress);
++
+         int atIndex = XMPPAddress.lastIndexOf("@");
+         // If the String ends with '@', return the empty string.
+         if (atIndex + 1 > XMPPAddress.length()) {
+             return "";
+         }
+-        int slashIndex = XMPPAddress.indexOf("/");
+-        if (slashIndex > 0 && slashIndex > atIndex) {
+-            return XMPPAddress.substring(atIndex + 1, slashIndex);
+-        }
+         else {
+             return XMPPAddress.substring(atIndex + 1);
+         }
