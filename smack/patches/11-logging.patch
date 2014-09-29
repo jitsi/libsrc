@@ -1,0 +1,1111 @@
+Description: Adds logging so we can forward all log messages to file
+Index: source/org/jivesoftware/smackx/workgroup/util/ListenerEventDispatcher.java
+===================================================================
+--- source/org/jivesoftware/smackx/workgroup/util/ListenerEventDispatcher.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/workgroup/util/ListenerEventDispatcher.java	(revision )
+@@ -18,6 +18,8 @@
+ 
+ import java.lang.reflect.Method;
+ import java.util.*;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * This class is a very flexible event dispatcher which implements Runnable so that it can
+@@ -34,6 +36,8 @@
+ public class ListenerEventDispatcher
+     implements Runnable {
+ 
++    private static final Logger LOGGER = Logger.getLogger(ListenerEventDispatcher.class.getName());
++
+     protected transient ArrayList triplets;
+ 
+     protected transient boolean hasFinishedDispatching;
+@@ -94,7 +98,7 @@
+             } catch (Exception e) {
+                 System.err.println("Exception dispatching an event: " + e);
+ 
+-                e.printStackTrace();
++                LOGGER.log(Level.SEVERE, "", e);
+             }
+         }
+ 
+\ No newline at end of file
+Index: source/org/jivesoftware/smack/XMPPConnection.java
+===================================================================
+--- source/org/jivesoftware/smack/XMPPConnection.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/XMPPConnection.java	(revision )
+@@ -42,6 +42,8 @@
+ import java.security.Provider;
+ import java.security.Security;
+ import java.util.Collection;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * Creates a socket connection to a XMPP server. This is the default connection
+@@ -52,6 +54,8 @@
+  */
+ public class XMPPConnection extends Connection {
+ 
++    private static final Logger LOGGER = Logger.getLogger(XMPPConnection.class.getName());
++
+     /**
+      * The socket which is used for this connection.
+      */
+@@ -674,7 +678,7 @@
+                     reader = new BufferedReader(new InputStreamReader((InputStream) in, "UTF-8"));
+                 }
+                 catch (Exception e) {
+-                    e.printStackTrace();
++                    LOGGER.log(Level.INFO, "Error writing packet", e);
+                     reader = new BufferedReader(
+                             new InputStreamReader(socket.getInputStream(), "UTF-8"));
+                     writer = new BufferedWriter(
+@@ -990,7 +994,7 @@
+                 packetReader.notifyReconnection();
+             }
+             catch (XMPPException e) {
+-                e.printStackTrace();
++                LOGGER.log(Level.SEVERE, "Error login", e);
+             }
+         }
+     }
+Index: source/org/jivesoftware/smackx/XHTMLManager.java
+===================================================================
+--- source/org/jivesoftware/smackx/XHTMLManager.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/XHTMLManager.java	(revision )
+@@ -28,6 +28,8 @@
+ import org.jivesoftware.smackx.packet.XHTMLExtension;
+ 
+ import java.util.Iterator;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * Manages XHTML formatted texts within messages. A XHTMLManager provides a high level access to 
+@@ -38,6 +40,8 @@
+  */
+ public class XHTMLManager {
+ 
++    private static final Logger LOGGER = Logger.getLogger(XHTMLManager.class.getName());
++
+     private final static String namespace = "http://jabber.org/protocol/xhtml-im";
+ 
+     // Enable the XHTML support on every established connection
+@@ -137,7 +141,7 @@
+             return result.containsFeature(namespace);
+         }
+         catch (XMPPException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             return false;
+         }
+     }
+Index: source/org/jivesoftware/smackx/provider/VCardProvider.java
+===================================================================
+--- source/org/jivesoftware/smackx/provider/VCardProvider.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/provider/VCardProvider.java	(revision )
+@@ -34,6 +34,8 @@
+ import java.io.IOException;
+ import java.util.ArrayList;
+ import java.util.List;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * vCard provider.
+@@ -43,6 +45,8 @@
+  */
+ public class VCardProvider implements IQProvider {
+ 
++    private static final Logger LOGGER = Logger.getLogger(VCardProvider.class.getName());
++
+     private static final String PREFERRED_ENCODING = "UTF-8";
+ 
+     public IQ parseIQ(XmlPullParser parser) throws Exception {
+@@ -71,10 +75,10 @@
+             }
+         }
+         catch (XmlPullParserException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         }
+         catch (IOException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         }
+ 
+         String xmlText = sb.toString();
+Index: source/org/jivesoftware/smack/SASLAuthentication.java
+===================================================================
+--- source/org/jivesoftware/smack/SASLAuthentication.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/SASLAuthentication.java	(revision )
+@@ -31,6 +31,8 @@
+ import java.io.IOException;
+ import java.lang.reflect.Constructor;
+ import java.util.*;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * <p>This class is responsible authenticating the user using SASL, binding the resource
+@@ -63,6 +65,8 @@
+  */
+ public class SASLAuthentication implements UserAuthentication {
+ 
++    private static final Logger LOGGER = Logger.getLogger(SASLAuthentication.class.getName());
++
+     private static Map<String, Class> implementedMechanisms = new HashMap<String, Class>();
+     private static List<String> mechanismsPreferences = new ArrayList<String>();
+ 
+@@ -272,7 +276,7 @@
+                 throw e;
+             }
+             catch (Exception e) {
+-                e.printStackTrace();
++                LOGGER.log(Level.INFO, "SASL Authentication failed", e);
+             }
+         }
+         else {
+@@ -357,7 +361,7 @@
+                 throw e;
+             }
+             catch (Exception e) {
+-                e.printStackTrace();
++                LOGGER.log(Level.FINE, "SASL authentication failed", e);
+                 // SASL authentication failed so try a Non-SASL authentication
+                 return new NonSASLAuthentication(connection)
+                         .authenticate(username, password, resource);
+\ No newline at end of file
+Index: source/org/jivesoftware/smackx/muc/MultiUserChat.java
+===================================================================
+--- source/org/jivesoftware/smackx/muc/MultiUserChat.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/muc/MultiUserChat.java	(revision )
+@@ -31,6 +31,8 @@
+ import java.util.Map;
+ import java.util.WeakHashMap;
+ import java.util.concurrent.ConcurrentHashMap;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ import org.jivesoftware.smack.Chat;
+ import org.jivesoftware.smack.ConnectionCreationListener;
+@@ -76,6 +78,8 @@
+  */
+ public class MultiUserChat {
+ 
++    private static final Logger LOGGER = Logger.getLogger(MultiUserChat.class.getName());
++
+     private final static String discoNamespace = "http://jabber.org/protocol/muc";
+     private final static String discoNode = "http://jabber.org/protocol/muc#rooms";
+ 
+@@ -173,7 +177,7 @@
+             return result.containsFeature(discoNamespace);
+         }
+         catch (XMPPException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             return false;
+         }
+     }
+@@ -216,7 +220,7 @@
+             return answer.iterator();
+         }
+         catch (XMPPException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             // Return an iterator on an empty collection
+             return new ArrayList<String>().iterator();
+         }
+@@ -954,7 +958,7 @@
+             return null;
+         }
+         catch (XMPPException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             return null;
+         }
+     }
+@@ -2049,11 +2053,11 @@
+                 method.invoke(listener, params);
+             }
+         } catch (NoSuchMethodException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         } catch (InvocationTargetException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         } catch (IllegalAccessException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         }
+     }
+ 
+@@ -2100,11 +2104,11 @@
+                 method.invoke(listener, params.toArray());
+             }
+         } catch (NoSuchMethodException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         } catch (InvocationTargetException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         } catch (IllegalAccessException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         }
+     }
+ 
+Index: source/org/jivesoftware/smackx/workgroup/agent/AgentSession.java
+===================================================================
+--- source/org/jivesoftware/smackx/workgroup/agent/AgentSession.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/workgroup/agent/AgentSession.java	(revision )
+@@ -39,6 +39,8 @@
+ import org.jivesoftware.smackx.packet.MUCUser;
+ 
+ import java.util.*;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * This class embodies the agent's active presence within a given workgroup. The application
+@@ -53,6 +55,8 @@
+  */
+ public class AgentSession {
+ 
++    private static final Logger LOGGER = Logger.getLogger(AgentSession.class.getName());
++
+     private Connection connection;
+ 
+     private String workgroupJID;
+@@ -117,7 +121,7 @@
+                     handlePacket(packet);
+                 }
+                 catch (Exception e) {
+-                    e.printStackTrace();
++                    LOGGER.log(Level.SEVERE, "", e);
+                 }
+             }
+         };
+\ No newline at end of file
+Index: source/org/jivesoftware/smack/util/Base64.java
+===================================================================
+--- source/org/jivesoftware/smack/util/Base64.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/util/Base64.java	(revision )
+@@ -1,5 +1,8 @@
+ package org.jivesoftware.smack.util;
+ 
++import java.util.logging.Level;
++import java.util.logging.Logger;
++
+ /**
+  * <p>Encodes and decodes to and from Base64 notation.</p>
+  * <p>Homepage: <a href="http://iharder.net/base64">http://iharder.net/base64</a>.</p>
+@@ -68,6 +71,7 @@
+  */
+ public class Base64
+ {
++    private static final Logger LOGGER = Logger.getLogger(Base64.class.getName());
+ 
+ /* ********  P U B L I C   F I E L D S  ******** */
+ 
+@@ -572,7 +576,7 @@
+         }   // end try
+         catch( java.io.IOException e )
+         {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             return null;
+         }   // end catch
+         finally
+@@ -701,7 +705,7 @@
+             }   // end try
+             catch( java.io.IOException e )
+             {
+-                e.printStackTrace();
++                LOGGER.log(Level.SEVERE, "", e);
+                 return null;
+             }   // end catch
+             finally
+@@ -1045,12 +1049,12 @@
+         }   // end try
+         catch( java.io.IOException e )
+         {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             obj = null;
+         }   // end catch
+         catch( java.lang.ClassNotFoundException e )
+         {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             obj = null;
+         }   // end catch
+         finally
+@@ -1253,7 +1257,7 @@
+             out.write( encoded.getBytes("US-ASCII") ); // Strict, 7-bit output.
+         }   // end try
+         catch( java.io.IOException ex ) {
+-            ex.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", ex);
+         }   // end catch
+         finally {
+             try { out.close(); }
+@@ -1279,7 +1283,7 @@
+             out.write( decoded );
+         }   // end try
+         catch( java.io.IOException ex ) {
+-            ex.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", ex);
+         }   // end catch
+         finally {
+             try { out.close(); }
+Index: source/org/jivesoftware/smackx/packet/Time.java
+===================================================================
+--- source/org/jivesoftware/smackx/packet/Time.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/packet/Time.java	(revision )
+@@ -27,6 +27,8 @@
+ import java.util.Calendar;
+ import java.util.Date;
+ import java.util.TimeZone;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * A Time IQ packet, which is used by XMPP clients to exchange their respective local
+@@ -62,6 +64,8 @@
+  */
+ public class Time extends IQ {
+ 
++    private static final Logger LOGGER = Logger.getLogger(Time.class.getName());
++
+     private static SimpleDateFormat utcFormat = new SimpleDateFormat("yyyyMMdd'T'HH:mm:ss");
+     private static DateFormat displayFormat = DateFormat.getDateTimeInstance();
+ 
+@@ -109,7 +113,7 @@
+             date = cal.getTime();
+         }
+         catch (Exception e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         }
+         return date;
+     }
+\ No newline at end of file
+Index: source/org/jivesoftware/smack/util/StringUtils.java
+===================================================================
+--- source/org/jivesoftware/smack/util/StringUtils.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/util/StringUtils.java	(revision )
+@@ -29,12 +29,16 @@
+ import java.util.Date;
+ import java.util.Random;
+ import java.util.TimeZone;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * A collection of utility methods for String objects.
+  */
+ public class StringUtils {
+ 
++    private static final Logger LOGGER = Logger.getLogger(StringUtils.class.getName());
++
+     /**
+      * Date format as defined in XEP-0082 - XMPP Date and Time Profiles. The time zone is set to
+      * UTC.
+@@ -462,7 +466,7 @@
+             bytes = data.getBytes("ISO-8859-1");
+         }
+         catch (UnsupportedEncodingException uee) {
+-            uee.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", uee);
+         }
+         return encodeBase64(bytes);
+     }
+Index: source/org/jivesoftware/smack/Connection.java
+===================================================================
+--- source/org/jivesoftware/smack/Connection.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/Connection.java	(revision )
+@@ -32,6 +32,8 @@
+ import java.util.concurrent.CopyOnWriteArrayList;
+ import java.util.concurrent.CopyOnWriteArraySet;
+ import java.util.concurrent.atomic.AtomicInteger;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ import org.jivesoftware.smack.debugger.SmackDebugger;
+ import org.jivesoftware.smack.filter.PacketFilter;
+@@ -79,6 +81,8 @@
+  */
+ public abstract class Connection {
+ 
++    private static final Logger LOGGER = Logger.getLogger(Connection.class.getName());
++
+     /** 
+      * Counter to uniquely identify connections that are created.
+      */
+@@ -743,7 +747,7 @@
+                         debuggerClass = Class.forName(className);
+                     }
+                     catch (Exception e) {
+-                        e.printStackTrace();
++                        LOGGER.log(Level.FINER, "", e);
+                     }
+                 }
+                 if (debuggerClass == null) {
+@@ -757,7 +761,7 @@
+                                     Class.forName("org.jivesoftware.smack.debugger.LiteDebugger");
+                         }
+                         catch (Exception ex2) {
+-                            ex2.printStackTrace();
++                            LOGGER.log(Level.FINER, "", ex2);
+                         }
+                     }
+                 }
+Index: source/org/jivesoftware/smackx/MessageEventManager.java
+===================================================================
+--- source/org/jivesoftware/smackx/MessageEventManager.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/MessageEventManager.java	(revision )
+@@ -25,6 +25,8 @@
+ import java.util.ArrayList;
+ import java.util.Iterator;
+ import java.util.List;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ import org.jivesoftware.smack.PacketListener;
+ import org.jivesoftware.smack.Connection;
+@@ -43,6 +45,8 @@
+  */
+ public class MessageEventManager {
+ 
++    private static final Logger LOGGER = Logger.getLogger(MessageEventManager.class.getName());
++
+     private List<MessageEventNotificationListener> messageEventNotificationListeners = new ArrayList<MessageEventNotificationListener>();
+     private List<MessageEventRequestListener> messageEventRequestListeners = new ArrayList<MessageEventRequestListener>();
+ 
+@@ -158,11 +162,11 @@
+                 method.invoke(listeners[i], new Object[] { from, packetID, this });
+             }
+         } catch (NoSuchMethodException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         } catch (InvocationTargetException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         } catch (IllegalAccessException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         }
+     }
+ 
+@@ -189,11 +193,11 @@
+                 method.invoke(listeners[i], new Object[] { from, packetID });
+             }
+         } catch (NoSuchMethodException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         } catch (InvocationTargetException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         } catch (IllegalAccessException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         }
+     }
+ 
+\ No newline at end of file
+Index: source/org/jivesoftware/smackx/packet/LastActivity.java
+===================================================================
+--- source/org/jivesoftware/smackx/packet/LastActivity.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/packet/LastActivity.java	(revision )
+@@ -30,6 +30,9 @@
+ import org.jivesoftware.smack.util.StringUtils;
+ import org.xmlpull.v1.XmlPullParser;
+ 
++import java.util.logging.Level;
++import java.util.logging.Logger;
++
+ /**
+  * A last activity IQ for retrieving information about the last activity associated with a Jabber ID.
+  * LastActivity (JEP-012) allows for retrieval of how long a particular user has been idle and the
+@@ -40,6 +43,8 @@
+  */
+ public class LastActivity extends IQ {
+ 
++    private static final Logger LOGGER = Logger.getLogger(LastActivity.class.getName());
++
+     public long lastActivity = -1;
+     public String message;
+ 
+@@ -119,7 +124,7 @@
+                 }
+             }
+             catch (Exception e) {
+-                e.printStackTrace();
++                LOGGER.log(Level.SEVERE, "", e);
+             }
+             return lastActivity;
+         }
+Index: source/org/jivesoftware/smackx/commands/AdHocCommandManager.java
+===================================================================
+--- source/org/jivesoftware/smackx/commands/AdHocCommandManager.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/commands/AdHocCommandManager.java	(revision )
+@@ -42,6 +42,8 @@
+ import java.util.List;
+ import java.util.Map;
+ import java.util.concurrent.ConcurrentHashMap;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * An AdHocCommandManager is responsible for keeping the list of available
+@@ -55,6 +57,8 @@
+  */
+ public class AdHocCommandManager {
+ 
++    private static final Logger LOGGER = Logger.getLogger(AdHocCommandManager.class.getName());
++
+     private static final String DISCO_NAMESPACE = "http://jabber.org/protocol/commands";
+ 
+     private static final String discoNode = DISCO_NAMESPACE;
+@@ -499,7 +503,8 @@
+                     executingCommands.remove(sessionId);
+                 }
+                 respondError(response, error);
+-                e.printStackTrace();
++
++                LOGGER.log(Level.SEVERE, "", e);
+             }
+         }
+         else {
+@@ -615,7 +620,7 @@
+                     }
+                     respondError(response, error);
+ 
+-                    e.printStackTrace();
++                    LOGGER.log(Level.SEVERE, "", e);
+                 }
+             }
+         }
+@@ -679,12 +684,12 @@
+             command.setNode(commandInfo.getNode());
+         }
+         catch (InstantiationException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             throw new XMPPException(new XMPPError(
+                     XMPPError.Condition.interna_server_error));
+         }
+         catch (IllegalAccessException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             throw new XMPPException(new XMPPError(
+                     XMPPError.Condition.interna_server_error));
+         }
+\ No newline at end of file
+Index: source/org/jivesoftware/smack/AccountManager.java
+===================================================================
+--- source/org/jivesoftware/smack/AccountManager.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/AccountManager.java	(revision )
+@@ -32,6 +32,8 @@
+ import java.util.Collections;
+ import java.util.HashMap;
+ import java.util.Map;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * Allows creation and management of accounts on an XMPP server.
+@@ -41,6 +43,8 @@
+  */
+ public class AccountManager {
+ 
++    private static final Logger LOGGER = Logger.getLogger(AccountManager.class.getName());
++
+     private Connection connection;
+     private Registration info = null;
+ 
+@@ -134,7 +138,7 @@
+             }
+         }
+         catch (XMPPException xe) {
+-            xe.printStackTrace();
++            LOGGER.log(Level.INFO, "", xe);
+         }
+         return Collections.emptySet();
+     }
+@@ -155,7 +159,7 @@
+             return info.getAttributes().get(name);
+         }
+         catch (XMPPException xe) {
+-            xe.printStackTrace();
++            LOGGER.log(Level.INFO, "", xe);
+         }
+         return null;
+     }
+\ No newline at end of file
+Index: source/org/jivesoftware/smack/PacketReader.java
+===================================================================
+--- source/org/jivesoftware/smack/PacketReader.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/PacketReader.java	(revision )
+@@ -31,6 +31,8 @@
+ import org.xmlpull.v1.XmlPullParserException;
+ 
+ import java.util.concurrent.*;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * Listens for XML traffic from the XMPP server and parses it into packet objects.
+@@ -42,6 +44,8 @@
+  */
+ class PacketReader {
+ 
++    private static final Logger LOGGER = Logger.getLogger(PacketReader.class.getName());
++
+     private Thread readerThread;
+     private ExecutorService listenerExecutor;
+ 
+@@ -136,7 +140,7 @@
+                 catch (Exception e) {
+                     // Cath and print any exception so we can recover
+                     // from a faulty listener and finish the shutdown process
+-                    e.printStackTrace();
++                    LOGGER.log(Level.SEVERE, "faulty listener", e);
+                 }
+             }
+         }
+@@ -165,7 +169,7 @@
+         // Closes the connection temporary. A reconnection is possible
+         connection.shutdown(new Presence(Presence.Type.unavailable));
+         // Print the stack trace to help catch the problem
+-        e.printStackTrace();
++        LOGGER.log(Level.SEVERE, "Closes the connection temporary", e);
+         // Notify connection listeners of the error.
+         for (ConnectionListener listener : connection.getConnectionListeners()) {
+             try {
+@@ -174,7 +178,7 @@
+             catch (Exception e2) {
+                 // Catch and print any exception so we can recover
+                 // from a faulty listener
+-                e2.printStackTrace();
++                LOGGER.log(Level.SEVERE, "faulty listener", e2);
+             }
+         }
+     }
+@@ -191,7 +195,7 @@
+             catch (Exception e) {
+                 // Catch and print any exception so we can recover
+                 // from a faulty listener
+-                e.printStackTrace();
++                LOGGER.log(Level.SEVERE, "faulty listener", e);
+             }
+         }
+     }
+@@ -208,7 +212,7 @@
+             parser.setInput(connection.reader);
+         }
+         catch (XmlPullParserException xppe) {
+-            xppe.printStackTrace();
++            LOGGER.log(Level.SEVERE, "parser error", xppe);
+         }
+     }
+ 
+\ No newline at end of file
+Index: source/org/jivesoftware/smackx/packet/VCard.java
+===================================================================
+--- source/org/jivesoftware/smackx/packet/VCard.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/packet/VCard.java	(revision )
+@@ -42,6 +42,8 @@
+ import java.util.HashMap;
+ import java.util.Iterator;
+ import java.util.Map;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * A VCard class for use with the
+@@ -85,6 +87,8 @@
+  */
+ public class VCard extends IQ {
+ 
++    private static final Logger LOGGER = Logger.getLogger(VCard.class.getName());
++
+     /**
+      * Phone types:
+      * VOICE?, FAX?, PAGER?, MSG?, CELL?, VIDEO?, BBS?, MODEM?, ISDN?, PCS?, PREF?
+@@ -330,7 +334,7 @@
+             bytes = getBytes(avatarURL);
+         }
+         catch (IOException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         }
+ 
+         setAvatar(bytes);
+@@ -465,7 +469,7 @@
+             digest = MessageDigest.getInstance("SHA-1");
+         }
+         catch (NoSuchAlgorithmException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             return null;
+         }
+ 
+Index: source/org/jivesoftware/smack/util/PacketParserUtils.java
+===================================================================
+--- source/org/jivesoftware/smack/util/PacketParserUtils.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/util/PacketParserUtils.java	(revision )
+@@ -38,6 +38,8 @@
+ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * Utility class that helps to parse packets. Any parsing packets method that must be shared
+@@ -47,6 +49,8 @@
+  */
+ public class PacketParserUtils {
+ 
++    private static final Logger LOGGER = Logger.getLogger(PacketParserUtils.class.getName());
++
+     /**
+      * Namespace used to store packet properties.
+      */
+@@ -612,7 +616,7 @@
+                                     value = in.readObject();
+                                 }
+                                 catch (Exception e) {
+-                                    e.printStackTrace();
++                                    LOGGER.log(Level.SEVERE, "", e);
+                                 }
+                             }
+                             if (name != null && value != null) {
+@@ -744,7 +748,7 @@
+         }
+         catch (IllegalArgumentException iae) {
+             // Print stack trace. We shouldn't be getting an illegal error type.
+-            iae.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", iae);
+         }
+         return new XMPPError(Integer.parseInt(errorCode), errorType, condition, message, extensions);
+     }
+Index: source/org/jivesoftware/smack/ServerTrustManager.java
+===================================================================
+--- source/org/jivesoftware/smack/ServerTrustManager.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/ServerTrustManager.java	(revision )
+@@ -29,6 +29,8 @@
+ import java.security.cert.CertificateParsingException;
+ import java.security.cert.X509Certificate;
+ import java.util.*;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ import java.util.regex.Matcher;
+ import java.util.regex.Pattern;
+ 
+@@ -42,6 +44,8 @@
+  */
+ class ServerTrustManager implements X509TrustManager {
+ 
++    private static final Logger LOGGER = Logger.getLogger(ServerTrustManager.class.getName());
++
+     private static Pattern cnPattern = Pattern.compile("(?i)(cn=)([^,]*)");
+ 
+     private ConnectionConfiguration configuration;
+@@ -63,7 +67,7 @@
+             trustStore.load(in, configuration.getTruststorePassword().toCharArray());
+         }
+         catch (Exception e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+             // Disable root CA checking
+             configuration.setVerifyRootCAEnabled(false);
+         }
+@@ -138,7 +142,7 @@
+                 }
+             }
+             catch (KeyStoreException e) {
+-                e.printStackTrace();
++                LOGGER.log(Level.SEVERE, "", e);
+             }
+             if (!trusted) {
+                 throw new CertificateException("root certificate not trusted of " + peerIdentities);
+@@ -251,7 +255,7 @@
+             }*/
+         }
+         catch (CertificateParsingException e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         }
+         return identities;
+     }
+Index: source/org/jivesoftware/smack/PacketWriter.java
+===================================================================
+--- source/org/jivesoftware/smack/PacketWriter.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/PacketWriter.java	(revision )
+@@ -26,6 +26,8 @@
+ import java.io.Writer;
+ import java.util.concurrent.ArrayBlockingQueue;
+ import java.util.concurrent.BlockingQueue;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * Writes packets to a XMPP server. Packets are sent using a dedicated thread. Packet
+@@ -39,6 +41,8 @@
+  */
+ class PacketWriter {
+ 
++    private static final Logger LOGGER = Logger.getLogger(PacketWriter.class.getName());
++
+     private Thread writerThread;
+     private Thread keepAliveThread;
+     private Writer writer;
+@@ -95,7 +99,7 @@
+                 queue.put(packet);
+             }
+             catch (InterruptedException ie) {
+-                ie.printStackTrace();
++                LOGGER.log(Level.SEVERE, "parser error", ie);
+                 return;
+             }
+             synchronized (queue) {
+@@ -209,7 +213,7 @@
+                 }
+             }
+             catch (Exception e) {
+-                e.printStackTrace();
++                LOGGER.log(Level.SEVERE, "Error writing packet", e);
+             }
+ 
+             // Delete the queue contents (hopefully nothing is left).
+\ No newline at end of file
+Index: source/org/jivesoftware/smack/packet/Packet.java
+===================================================================
+--- source/org/jivesoftware/smack/packet/Packet.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/packet/Packet.java	(revision )
+@@ -27,6 +27,8 @@
+ import java.io.Serializable;
+ import java.util.*;
+ import java.util.concurrent.CopyOnWriteArrayList;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * Base class for XMPP packets. Every packet has a unique ID (which is automatically
+@@ -42,6 +44,8 @@
+  */
+ public abstract class Packet {
+ 
++    private static final Logger LOGGER = Logger.getLogger(Packet.class.getName());
++
+     protected static final String DEFAULT_LANGUAGE =
+             java.util.Locale.getDefault().getLanguage().toLowerCase();
+ 
+@@ -384,7 +388,7 @@
+                         buf.append(encodedVal).append("</value>");
+                     }
+                     catch (Exception e) {
+-                        e.printStackTrace();
++                        LOGGER.log(Level.SEVERE, "", e);
+                     }
+                     finally {
+                         if (out != null) {
+\ No newline at end of file
+Index: source/org/jivesoftware/smack/ReconnectionManager.java
+===================================================================
+--- source/org/jivesoftware/smack/ReconnectionManager.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/ReconnectionManager.java	(revision )
+@@ -2,6 +2,9 @@
+ 
+ import org.jivesoftware.smack.packet.StreamError;
+ import java.util.Random;
++import java.util.logging.Level;
++import java.util.logging.Logger;
++
+ /**
+  * Handles the automatic reconnection process. Every time a connection is dropped without
+  * the application explictly closing it, the manager automatically tries to reconnect to
+@@ -18,6 +21,8 @@
+  */
+ public class ReconnectionManager implements ConnectionListener {
+ 
++    private static final Logger LOGGER = Logger.getLogger(ReconnectionManager.class.getName());
++
+     // Holds the connection to the server
+     private Connection connection;
+     private Thread reconnectionThread;
+@@ -116,7 +121,7 @@
+                                         .notifyAttemptToReconnectIn(remainingSeconds);
+                             }
+                             catch (InterruptedException e1) {
+-                                e1.printStackTrace();
++                                LOGGER.log(Level.FINE, "Error waiting", e1);
+                                 // Notify the reconnection has failed
+                                 ReconnectionManager.this.notifyReconnectionFailed(e1);
+                             }
+\ No newline at end of file
+Index: source/org/jivesoftware/smack/provider/ProviderManager.java
+===================================================================
+--- source/org/jivesoftware/smack/provider/ProviderManager.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/provider/ProviderManager.java	(revision )
+@@ -29,6 +29,8 @@
+ import java.net.URL;
+ import java.util.*;
+ import java.util.concurrent.ConcurrentHashMap;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * Manages providers for parsing custom XML sub-documents of XMPP packets. Two types of
+@@ -117,6 +119,8 @@
+  */
+ public class ProviderManager {
+ 
++    private static final Logger LOGGER = Logger.getLogger(ProviderManager.class.getName());
++
+     private static ProviderManager instance;
+ 
+     private Map<String, Object> extensionProviders = new ConcurrentHashMap<String, Object>();
+@@ -200,7 +204,7 @@
+                                             }
+                                         }
+                                         catch (ClassNotFoundException cnfe) {
+-                                            cnfe.printStackTrace();
++                                            LOGGER.log(Level.SEVERE, "", cnfe);
+                                         }
+                                     }
+                                 }
+@@ -236,7 +240,7 @@
+                                             }
+                                         }
+                                         catch (ClassNotFoundException cnfe) {
+-                                            cnfe.printStackTrace();
++                                            LOGGER.log(Level.SEVERE, "", cnfe);
+                                         }
+                                     }
+                                 }
+@@ -257,7 +261,7 @@
+             }
+         }
+         catch (Exception e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", e);
+         }
+     }
+ 
+Index: source/org/jivesoftware/smack/SmackConfiguration.java
+===================================================================
+--- source/org/jivesoftware/smack/SmackConfiguration.java	(date 1411985568000)
++++ source/org/jivesoftware/smack/SmackConfiguration.java	(revision )
+@@ -26,6 +26,8 @@
+ import java.io.InputStream;
+ import java.net.URL;
+ import java.util.*;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * Represents the configuration of Smack. The configuration is used for:
+@@ -44,6 +46,8 @@
+  */
+ public final class SmackConfiguration {
+ 
++    private static final Logger LOGGER = Logger.getLogger(SmackConfiguration.class.getName());
++
+     private static final String SMACK_VERSION = "3.2.2";
+ 
+     private static int packetReplyTimeout = 5000;
+@@ -109,7 +113,7 @@
+                         while (eventType != XmlPullParser.END_DOCUMENT);
+                     }
+                     catch (Exception e) {
+-                        e.printStackTrace();
++                        LOGGER.log(Level.INFO, "", e);
+                     }
+                     finally {
+                         try {
+@@ -123,7 +127,7 @@
+             }
+         }
+         catch (Exception e) {
+-            e.printStackTrace();
++            LOGGER.log(Level.FINER, "", e);
+         }
+     }
+ 
+@@ -318,7 +322,7 @@
+             return Integer.parseInt(parser.nextText());
+         }
+         catch (NumberFormatException nfe) {
+-            nfe.printStackTrace();
++            LOGGER.log(Level.SEVERE, "", nfe);
+             return defaultValue;
+         }
+     }
+Index: source/org/jivesoftware/smackx/MultipleRecipientManager.java
+===================================================================
+--- source/org/jivesoftware/smackx/MultipleRecipientManager.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/MultipleRecipientManager.java	(revision )
+@@ -33,6 +33,8 @@
+ import java.util.ArrayList;
+ import java.util.Iterator;
+ import java.util.List;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ /**
+  * A MultipleRecipientManager allows to send packets to multiple recipients by making use of
+@@ -43,6 +45,8 @@
+  */
+ public class MultipleRecipientManager {
+ 
++    private static final Logger LOGGER = Logger.getLogger(MultipleRecipientManager.class.getName());
++
+     /**
+      * Create a cache to hold the 100 most recently accessed elements for a period of
+      * 24 hours.
+@@ -315,7 +319,7 @@
+                         services.put(serviceName, serviceAddress == null ? "" : serviceAddress);
+                     }
+                     catch (XMPPException e) {
+-                        e.printStackTrace();
++                        LOGGER.log(Level.SEVERE, "", e);
+                     }
+                 }
+             }
+Index: source/org/jivesoftware/smackx/provider/StreamInitiationProvider.java
+===================================================================
+--- source/org/jivesoftware/smackx/provider/StreamInitiationProvider.java	(date 1411985568000)
++++ source/org/jivesoftware/smackx/provider/StreamInitiationProvider.java	(revision )
+@@ -21,6 +21,8 @@
+ 
+ import java.text.ParseException;
+ import java.util.Date;
++import java.util.logging.Level;
++import java.util.logging.Logger;
+ 
+ import org.jivesoftware.smack.packet.IQ;
+ import org.jivesoftware.smack.provider.IQProvider;
+@@ -38,6 +40,8 @@
+  */
+ public class StreamInitiationProvider implements IQProvider {
+ 
++    private static final Logger LOGGER = Logger.getLogger(StreamInitiationProvider.class.getName());
++
+ 	public IQ parseIQ(final XmlPullParser parser) throws Exception {
+ 		boolean done = false;
+ 
+@@ -90,7 +94,7 @@
+                             fileSize = Long.parseLong(size);
+                         }
+                         catch (NumberFormatException e) {
+-                            e.printStackTrace();
++                            LOGGER.log(Level.SEVERE, "", e);
+                         }
+                     }
+                     
