@@ -1,7 +1,5 @@
+Description: Nodes strings in the discovery info packets are not escaped as in the other packets.
 Index: source/org/jivesoftware/smackx/packet/DiscoverInfo.java
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
 ===================================================================
 --- source/org/jivesoftware/smackx/packet/DiscoverInfo.java	(revision 12975)
 +++ source/org/jivesoftware/smackx/packet/DiscoverInfo.java	(revision )
@@ -49,9 +47,6 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 \ No newline at end of file
 +}
 Index: source/org/jivesoftware/smackx/packet/DiscoverItems.java
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
 ===================================================================
 --- source/org/jivesoftware/smackx/packet/DiscoverItems.java	(revision 12975)
 +++ source/org/jivesoftware/smackx/packet/DiscoverItems.java	(revision )

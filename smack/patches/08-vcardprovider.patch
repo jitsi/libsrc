@@ -1,3 +1,4 @@
+Description: Uses voice as default number detail, if no type is available.
 Index: source/org/jivesoftware/smackx/provider/VCardProvider.java
 ===================================================================
 --- source/org/jivesoftware/smackx/provider/VCardProvider.java	(revision 12558)

@@ -1,3 +1,4 @@
+Description: Setting a custom trust manager, so we can control from outside the certificates, like asking the users with UI dialog do they trust this particular certificate and remember their choice. Replace a call getInetAddress().getHostName() with getInetAddress().getHostAddress() to avoid unnecessary DNS requests. Give access to the socket outside the connection. This one is used only for information purposes, to have the local/remote port and local/remote address of the connection in our packet logging utility.
 Index: source/org/jivesoftware/smack/XMPPConnection.java
 ===================================================================
 --- source/org/jivesoftware/smack/XMPPConnection.java	(revision 12558)

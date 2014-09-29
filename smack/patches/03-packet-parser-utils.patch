@@ -1,3 +1,4 @@
+Description: Changes to send service-unavailable for not handled iq as said in RFC 6120.
 Index: source/org/jivesoftware/smack/util/PacketParserUtils.java
 ===================================================================
 --- source/org/jivesoftware/smack/util/PacketParserUtils.java	(revision 12558)

@@ -1,6 +1,8 @@
-diff --git a/source/org/jivesoftware/smack/util/StringUtils.java b/source/org/jivesoftware/smack/util/StringUtils.java
---- a/source/org/jivesoftware/smack/util/StringUtils.java
-+++ b/source/org/jivesoftware/smack/util/StringUtils.java
+Description: Adds patch for parsing SMPP addresses provided by Sandeep Raghuraman.
+Index: source/org/jivesoftware/smack/util/StringUtils.java
+===================================================================
+--- source/org/jivesoftware/smack/util/StringUtils.java	(revision 12558)
++++ source/org/jivesoftware/smack/util/StringUtils.java	(revision )
 @@ -92,6 +92,9 @@
          if (XMPPAddress == null) {
              return null;

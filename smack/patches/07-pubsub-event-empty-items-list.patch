@@ -1,3 +1,4 @@
+Description: Fixes sending pubsub events for empty item (XEP-0060 allows no elements on second level of nodes).
 Index: source/org/jivesoftware/smackx/pubsub/Node.java
 ===================================================================
 --- source/org/jivesoftware/smackx/pubsub/Node.java	(revision 12558)

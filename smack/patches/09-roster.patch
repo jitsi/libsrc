@@ -1,7 +1,5 @@
+Description: Updates smack to handle roster packet errors.
 Index: source/org/jivesoftware/smack/RosterListener.java
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
 ===================================================================
 --- source/org/jivesoftware/smack/RosterListener.java	(revision 12558)
 +++ source/org/jivesoftware/smack/RosterListener.java	(revision )
@@ -29,9 +27,6 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
  }
 \ No newline at end of file
 Index: source/org/jivesoftware/smack/Roster.java
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
 ===================================================================
 --- source/org/jivesoftware/smack/Roster.java	(revision 12558)
 +++ source/org/jivesoftware/smack/Roster.java	(revision )

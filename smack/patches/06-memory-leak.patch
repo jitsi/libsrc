@@ -1,3 +1,4 @@
+Description: Improper use of WeakHashMap leads to memory leak as XMPPConnections stay in memory and all their listeners.
 Index: source/org/jivesoftware/smackx/ChatStateManager.java
 ===================================================================
 --- source/org/jivesoftware/smackx/ChatStateManager.java	(revision 12975)

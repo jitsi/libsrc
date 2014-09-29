@@ -1,3 +1,4 @@
+Description: Removes ProviderManager private constructor so we can extend it.
 Index: source/org/jivesoftware/smack/provider/ProviderManager.java
 ===================================================================
 --- source/org/jivesoftware/smack/provider/ProviderManager.java	(revision 12558)

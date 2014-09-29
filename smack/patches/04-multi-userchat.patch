@@ -1,3 +1,4 @@
+Description: Adds more codes for successful room joins.
 Index: source/org/jivesoftware/smackx/muc/MultiUserChat.java
 ===================================================================
 --- source/org/jivesoftware/smackx/muc/MultiUserChat.java	(revision 12558)
