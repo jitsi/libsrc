@@ -1,0 +1,40 @@
+Description: Avoids malformed presence packets (status content) to interrupt xmpp connection.
+Index: source/org/jivesoftware/smack/util/PacketParserUtils.java
+===================================================================
+--- source/org/jivesoftware/smack/util/PacketParserUtils.java	(revision 4d0b4c899ff59dbf1598088ea567ba15036a8e5f)
++++ source/org/jivesoftware/smack/util/PacketParserUtils.java	(revision )
+@@ -188,7 +188,7 @@
+                 type = Presence.Type.valueOf(typeString);
+             }
+             catch (IllegalArgumentException iae) {
+-                System.err.println("Found invalid presence type " + typeString);
++                LOGGER.log(Level.SEVERE, "Found invalid presence type " + typeString);
+             }
+         }
+         Presence presence = new Presence(type);
+@@ -211,8 +211,14 @@
+                 String elementName = parser.getName();
+                 String namespace = parser.getNamespace();
+                 if (elementName.equals("status")) {
++                    try {
+-                    presence.setStatus(parser.nextText());
+-                }
++                        presence.setStatus(parser.nextText());
++                    }
++                    catch (Throwable t)
++                    {
++                        LOGGER.log(Level.SEVERE, "Error parsing presence status", t);
++                    }
++                }
+                 else if (elementName.equals("priority")) {
+                     try {
+                         int priority = Integer.parseInt(parser.nextText());
+@@ -232,7 +238,7 @@
+                         presence.setMode(Presence.Mode.valueOf(modeText));
+                     }
+                     catch (IllegalArgumentException iae) {
+-                        System.err.println("Found invalid presence mode " + modeText);
++                        LOGGER.log(Level.SEVERE, "Found invalid presence mode " + modeText);
+                     }
+                 }
+                 else if (elementName.equals("error")) {
