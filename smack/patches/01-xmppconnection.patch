@@ -1,83 +1,784 @@
-Description: Setting a custom trust manager, so we can control from outside the certificates, like asking the users with UI dialog do they trust this particular certificate and remember their choice. Replace a call getInetAddress().getHostName() with getInetAddress().getHostAddress() to avoid unnecessary DNS requests. Give access to the socket outside the connection. This one is used only for information purposes, to have the local/remote port and local/remote address of the connection in our packet logging utility.
+Description: Setting a custom trust manager, so we can control from outside the certificates, like asking the users with UI dialog do they trust this particular certificate and remember their choice. Replace a call getInetAddress().getHostName() with getInetAddress().getHostAddress() to avoid unnecessary DNS requests. Give access to the socket outside the connection. This one is used only for information purposes, to have the local/remote port and local/remote address of the connection in our packet logging utility. Backport TLSUtils, to control supported ssl protocols.
+Index: source/org/jivesoftware/smack/SmackException.java
+===================================================================
+--- source/org/jivesoftware/smack/SmackException.java	(revision )
++++ source/org/jivesoftware/smack/SmackException.java	(revision )
+@@ -0,0 +1,269 @@
++/**
++ *
++ * Copyright 2014 Florian Schmaus
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.jivesoftware.smack;
++
++import java.util.ArrayList;
++import java.util.List;
++
++import org.jivesoftware.smack.util.dns.HostAddress;
++
++/**
++ * Smack uses SmackExceptions for errors that are not defined by any XMPP specification.
++ * 
++ * @author Florian Schmaus
++ */
++public class SmackException extends Exception {
++
++    /**
++     * 
++     */
++    private static final long serialVersionUID = 1844674365368214457L;
++
++    /**
++     * Creates a new SmackException with the Throwable that was the root cause of the exception.
++     * 
++     * @param wrappedThrowable the root cause of the exception.
++     */
++    public SmackException(Throwable wrappedThrowable) {
++        super(wrappedThrowable);
++    }
++
++    public SmackException(String message) {
++        super(message);
++    }
++
++    public SmackException(String message, Throwable wrappedThrowable) {
++        super(message, wrappedThrowable);
++    }
++
++    protected SmackException() {
++    }
++
++    /**
++     * Exception thrown always when there was no response to an (IQ) request within the packet reply
++     * timeout of the used connection instance.
++     */
++    public static class NoResponseException extends SmackException {
++        /**
++         * 
++         */
++        private static final long serialVersionUID = -6523363748984543636L;
++
++        public NoResponseException() {
++            super("No response received within packet reply timeout");
++        }
++    }
++
++    public static class NotLoggedInException extends SmackException {
++
++        /**
++         * 
++         */
++        private static final long serialVersionUID = 3216216839100019278L;
++
++        public NotLoggedInException() {
++            super("Client is not logged in");
++        }
++    }
++
++    public static class AlreadyLoggedInException extends SmackException {
++
++        /**
++         * 
++         */
++        private static final long serialVersionUID = 5011416918049935231L;
++
++        public AlreadyLoggedInException() {
++            super("Client is already logged in");
++        }
++    }
++
++    public static class AlreadyConnectedException extends SmackException {
++
++        /**
++         * 
++         */
++        private static final long serialVersionUID = 5011416918049135231L;
++
++        public AlreadyConnectedException() {
++            super("Client is already connected");
++        }
++    }
++
++    public static class NotConnectedException extends SmackException {
++
++        /**
++         * 
++         */
++        private static final long serialVersionUID = 9197980400776001173L;
++
++        public NotConnectedException() {
++            super("Client is not, or no longer, connected");
++        }
++    }
++
++    public static class IllegalStateChangeException extends SmackException {
++
++        /**
++         * 
++         */
++        private static final long serialVersionUID = -1766023961577168927L;
++
++        public IllegalStateChangeException() {
++        }
++    }
++
++    public static abstract class SecurityRequiredException extends SmackException {
++
++        /**
++         * 
++         */
++        private static final long serialVersionUID = 384291845029773545L;
++
++        public SecurityRequiredException(String message) {
++            super(message);
++        }
++    }
++
++    public static class SecurityRequiredByClientException extends SecurityRequiredException {
++        /**
++         * 
++         */
++        private static final long serialVersionUID = 2395325821201543159L;
++
++        public SecurityRequiredByClientException() {
++            super("SSL/TLS required by client but not supported by server");
++        }
++    }
++
++    public static class SecurityRequiredByServerException extends SecurityRequiredException {
++        /**
++         * 
++         */
++        private static final long serialVersionUID = 8268148813117631819L;
++
++        public SecurityRequiredByServerException() {
++            super("SSL/TLS required by server but disabled in client");
++        }
++    }
++
++    public static class SecurityNotPossibleException extends SmackException {
++
++        /**
++         * 
++         */
++        private static final long serialVersionUID = -6836090872690331336L;
++
++        public SecurityNotPossibleException(String message) {
++            super(message);
++        }
++    }
++
++    /**
++     * ConnectionException is thrown if Smack is unable to connect to all hosts of a given XMPP
++     * service. The failed hosts can be retrieved with
++     * {@link ConnectionException#getFailedAddresses()}, which will have the exception causing the
++     * connection failure set and retrievable with {@link HostAddress#getException()}.
++     */
++    public static class ConnectionException extends SmackException {
++
++        /**
++         * 
++         */
++        private static final long serialVersionUID = 1686944201672697996L;
++
++        private final List<HostAddress> failedAddresses;
++
++        public ConnectionException(Throwable wrappedThrowable) {
++            super(wrappedThrowable);
++            failedAddresses = new ArrayList<HostAddress>(0);
++        }
++
++        private ConnectionException(String message, List<HostAddress> failedAddresses) {
++            super(message);
++            this.failedAddresses = failedAddresses;
++        }
++
++        public static ConnectionException from(List<HostAddress> failedAddresses) {
++            final String DELIMITER = ", ";
++            StringBuilder sb = new StringBuilder("The following addresses failed: ");
++            for (HostAddress hostAddress : failedAddresses) {
++                sb.append(hostAddress.getErrorMessage());
++                sb.append(DELIMITER);
++            }
++            // Remove the last delimiter
++            sb.setLength(sb.length() - DELIMITER.length());
++            return new ConnectionException(sb.toString(), failedAddresses);
++        }
++
++        public List<HostAddress> getFailedAddresses() {
++            return failedAddresses;
++        }
++    }
++
++    public static class FeatureNotSupportedException extends SmackException {
++
++        /**
++         * 
++         */
++        private static final long serialVersionUID = 4713404802621452016L;
++
++        private final String feature;
++        private final String jid;
++
++        public FeatureNotSupportedException(String feature) {
++            this(feature, null);
++        }
++
++        public FeatureNotSupportedException(String feature, String jid) {
++            super(feature + " not supported" + (jid == null ? "" : " by '" + jid + "'"));
++            this.jid = jid;
++            this.feature = feature;
++        }
++
++        /**
++         * Get the feature which is not supported.
++         *
++         * @return the feature which is not supported
++         */
++        public String getFeature() {
++            return feature;
++        }
++
++        /**
++         * Get JID which does not support the feature. The JID can be null in cases when there are
++         * multiple JIDs queried for this feature.
++         *
++         * @return the JID which does not support the feature, or null
++         */
++        public String getJid() {
++            return jid;
++        }
++    }
++
++    public static class ResourceBindingNotOfferedException extends SmackException {
++
++        /**
++         * 
++         */
++        private static final long serialVersionUID = 2346934138253437571L;
++
++        public ResourceBindingNotOfferedException() {
++            super("Resource binding was not offered by server");
++        }
++    }
++}
 Index: source/org/jivesoftware/smack/XMPPConnection.java
 ===================================================================
---- source/org/jivesoftware/smack/XMPPConnection.java	(revision 12558)
-+++ source/org/jivesoftware/smack/XMPPConnection.java	(working copy)
-@@ -78,6 +79,11 @@
+--- source/org/jivesoftware/smack/XMPPConnection.java	(revision 1f79bc08199d75a1cc4f83d4de6f62b0906584aa)
++++ source/org/jivesoftware/smack/XMPPConnection.java	(revision )
+@@ -25,6 +25,7 @@
+ import org.jivesoftware.smack.packet.Presence;
+ import org.jivesoftware.smack.packet.XMPPError;
+ import org.jivesoftware.smack.util.StringUtils;
++import org.jivesoftware.smack.util.TLSUtils;
+ 
+ import javax.net.ssl.KeyManager;
+ import javax.net.ssl.KeyManagerFactory;
+@@ -82,11 +83,6 @@
      Roster roster = null;
  
      /**
-+     * Custom SSL Context to inject TrustStore, KeyManager and TrustManager.
-+     */
-+    private SSLContext customSslContext = null;
-+
-+    /**
+-     * Custom SSL Context to inject TrustStore, KeyManager and TrustManager.
+-     */
+-    private SSLContext customSslContext = null;
+-
+-    /**
       * Collection of available stream compression methods offered by the server.
       */
      private Collection<String> compressionMethods;
-@@ -184,6 +190,16 @@
+@@ -193,16 +189,6 @@
          return user;
      }
  
-+     /**
-+      * Set custom SSL Context.
-+      *
-+      * @param customSslContext the custom SSL context to use for new connections.
-+      */
-+     public void setCustomSslContext(SSLContext customSslContext)
-+     {
-+         this.customSslContext = customSslContext;
-+     }
-+
+-     /**
+-      * Set custom SSL Context.
+-      *
+-      * @param customSslContext the custom SSL context to use for new connections.
+-      */
+-     public void setCustomSslContext(SSLContext customSslContext)
+-     {
+-         this.customSslContext = customSslContext;
+-     }
+-
      @Override
      public synchronized void login(String username, String password, String resource) throws XMPPException {
          if (!isConnected()) {
-@@ -728,7 +744,6 @@
-      * @throws Exception if an exception occurs.
-      */
-     void proceedTLSReceived() throws Exception {
--        SSLContext context = SSLContext.getInstance("TLS");
-         KeyStore ks = null;
-         KeyManager[] kms = null;
-         PasswordCallback pcb = null;
-@@ -791,13 +806,22 @@
+@@ -809,17 +795,14 @@
          }
  
          // Verify certificate presented by the server
--        context.init(kms,
--                new javax.net.ssl.TrustManager[]{new ServerTrustManager(getServiceName(), config)},
--                new java.security.SecureRandom());
-+        SSLContext context;
-+        if(customSslContext == null) {
-+            context = SSLContext.getInstance("TLS");
-+            context.init(kms,
-+                    new javax.net.ssl.TrustManager[]{
-+                            new ServerTrustManager(getServiceName(), config)},
-+                    new java.security.SecureRandom());
-+        }
-+        else {
-+             context = customSslContext;
-+        }
-+
+-        SSLContext context;
+-        if(customSslContext == null) {
++        SSLContext context = config.getCustomSSLContext();
++        if(context == null) {
+             context = SSLContext.getInstance("TLS");
+             context.init(kms,
+                     new javax.net.ssl.TrustManager[]{
+                             new ServerTrustManager(getServiceName(), config)},
+                     new java.security.SecureRandom());
+         }
+-        else {
+-             context = customSslContext;
+-        }
+ 
          Socket plain = socket;
          // Secure the plain connection
-         socket = context.getSocketFactory().createSocket(plain,
--                plain.getInetAddress().getHostName(), plain.getPort(), true);
-+                plain.getInetAddress().getHostAddress(), plain.getPort(), true);
-         socket.setSoTimeout(0);
+@@ -829,8 +812,13 @@
          socket.setKeepAlive(true);
          // Initialize the reader and writer with the new secured version
-@@ -982,4 +1006,13 @@
-             this.wasAuthenticated = wasAuthenticated;
-         }
-     }
+         initReaderAndWriter();
++
++        final SSLSocket sslSocket = (SSLSocket) socket;
++        TLSUtils.setEnabledProtocolsAndCiphers(sslSocket,
++                config.getEnabledSSLProtocols(), config.getEnabledSSLCiphers());
++
+         // Proceed to do the handshake
+-        ((SSLSocket) socket).startHandshake();
++        sslSocket.startHandshake();
+         //if (((SSLSocket) socket).getWantClientAuth()) {
+         //    System.err.println("Connection wants client auth");
+         //}
+Index: source/org/jivesoftware/smack/util/TLSUtils.java
+===================================================================
+--- source/org/jivesoftware/smack/util/TLSUtils.java	(revision )
++++ source/org/jivesoftware/smack/util/TLSUtils.java	(revision )
+@@ -0,0 +1,165 @@
++/**
++ *
++ * Copyright 2014 Florian Schmaus
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.jivesoftware.smack.util;
++
++import java.security.KeyManagementException;
++import java.security.NoSuchAlgorithmException;
++import java.security.SecureRandom;
++import java.security.cert.CertificateException;
++import java.security.cert.X509Certificate;
++import java.util.Arrays;
++import java.util.HashSet;
++import java.util.Set;
++
++import javax.net.ssl.SSLContext;
++import javax.net.ssl.SSLSocket;
++import javax.net.ssl.TrustManager;
++import javax.net.ssl.X509TrustManager;
++
++import org.jivesoftware.smack.ConnectionConfiguration;
++import org.jivesoftware.smack.SmackException.SecurityNotPossibleException;
++
++
++public class TLSUtils {
++
++    public static final String SSL = "SSL";
++    public static final String TLS = "TLS";
++    public static final String PROTO_SSL3 = SSL + "v3";
++    public static final String PROTO_TLSV1 = TLS + "v1";
++    public static final String PROTO_TLSV1_1 = TLS + "v1.1";
++    public static final String PROTO_TLSV1_2 = TLS + "v1.2";
 +
 +    /**
-+     * The currently used socket.
-+     * @return the currently used socket.
++     * Enable only TLS. Connections created with the given ConnectionConfiguration will only support TLS.
++     * <p>
++     * According to the <a
++     * href="https://raw.githubusercontent.com/stpeter/manifesto/master/manifesto.txt">Encrypted
++     * XMPP Manifesto</a>, TLSv1.2 shall be deployed, providing fallback support for SSLv3 and
++     * TLSv1.1. This method goes one step boyond and upgrades the handshake to use TLSv1 or better.
++     * This method requires the underlying OS to support all of TLSv1.2 , 1.1 and 1.0.
++     * </p>
++     * 
++     * @param conf the configuration to apply this setting to
 +     */
-+    public Socket getSocket()
-+    {
-+        return socket;
++    public static void setTLSOnly(ConnectionConfiguration conf) {
++        conf.setEnabledSSLProtocols(new String[] { PROTO_TLSV1_2,  PROTO_TLSV1_1, PROTO_TLSV1 });
 +    }
++
++    /**
++     * Enable only TLS and SSLv3. Connections created with the given ConnectionConfiguration will
++     * only support TLS and SSLv3.
++     * <p>
++     * According to the <a
++     * href="https://raw.githubusercontent.com/stpeter/manifesto/master/manifesto.txt">Encrypted
++     * XMPP Manifesto</a>, TLSv1.2 shall be deployed, providing fallback support for SSLv3 and
++     * TLSv1.1.
++     * </p>
++     * 
++     * @param conf the configuration to apply this setting to
++     */
++    public static void setSSLv3AndTLSOnly(ConnectionConfiguration conf) {
++        conf.setEnabledSSLProtocols(new String[] { PROTO_TLSV1_2,  PROTO_TLSV1_1, PROTO_TLSV1, PROTO_SSL3 });
++    }
++
++    /**
++     * Accept all SSL/TLS certificates.
++     * <p>
++     * <b>Warning</b> Use with care. This method make the Connection use
++     * {@link AcceptAllTrustManager}. Only use this method if you understand the implications.
++     * </p>
++     * 
++     * @param conf
++     * @throws NoSuchAlgorithmException
++     * @throws KeyManagementException
++     */
++    public static void acceptAllCertificates(ConnectionConfiguration conf) throws NoSuchAlgorithmException, KeyManagementException {
++        SSLContext context = SSLContext.getInstance(TLS);
++        context.init(null, new TrustManager[] { new AcceptAllTrustManager() }, new SecureRandom());
++        conf.setCustomSSLContext(context);
++    }
++
++    public static void setEnabledProtocolsAndCiphers(final SSLSocket sslSocket,
++                    String[] enabledProtocols, String[] enabledCiphers)
++                    throws SecurityNotPossibleException {
++        if (enabledProtocols != null) {
++            Set<String> enabledProtocolsSet = new HashSet<String>(Arrays.asList(enabledProtocols));
++            Set<String> supportedProtocolsSet = new HashSet<String>(
++                            Arrays.asList(sslSocket.getSupportedProtocols()));
++            Set<String> protocolsIntersection = new HashSet<String>(supportedProtocolsSet);
++            protocolsIntersection.retainAll(enabledProtocolsSet);
++            if (protocolsIntersection.isEmpty()) {
++                throw new SecurityNotPossibleException("Request to enable SSL/TLS protocols '"
++                                + StringUtils.collectionToString(enabledProtocolsSet)
++                                + "', but only '"
++                                + StringUtils.collectionToString(supportedProtocolsSet)
++                                + "' are supported.");
++            }
++
++            // Set the enabled protocols
++            enabledProtocols = new String[protocolsIntersection.size()];
++            enabledProtocols = protocolsIntersection.toArray(enabledProtocols);
++            sslSocket.setEnabledProtocols(enabledProtocols);
++        }
++
++        if (enabledCiphers != null) {
++            Set<String> enabledCiphersSet = new HashSet<String>(Arrays.asList(enabledCiphers));
++            Set<String> supportedCiphersSet = new HashSet<String>(
++                            Arrays.asList(sslSocket.getEnabledCipherSuites()));
++            Set<String> ciphersIntersection = new HashSet<String>(supportedCiphersSet);
++            ciphersIntersection.retainAll(enabledCiphersSet);
++            if (ciphersIntersection.isEmpty()) {
++                throw new SecurityNotPossibleException("Request to enable SSL/TLS ciphers '"
++                                + StringUtils.collectionToString(enabledCiphersSet)
++                                + "', but only '"
++                                + StringUtils.collectionToString(supportedCiphersSet)
++                                + "' are supported.");
++            }
++
++            enabledCiphers = new String[ciphersIntersection.size()];
++            enabledCiphers = ciphersIntersection.toArray(enabledCiphers);
++            sslSocket.setEnabledCipherSuites(enabledCiphers);
++        }
++    }
++
++    /**
++     * A {@link X509TrustManager} that <b>doesn't validate</b> X.509 certificates.
++     * <p>
++     * Connections that use this TrustManager will just be encrypted, without any guarantee that the
++     * counter part is actually the intended one. Man-in-the-Middle attacks will be possible, since
++     * any certificate presented by the attacker will be considered valid.
++     * </p>
++     */
++    public static class AcceptAllTrustManager implements X509TrustManager {
++
++        @Override
++        public void checkClientTrusted(X509Certificate[] arg0, String arg1)
++                        throws CertificateException {
++            // Nothing to do here
++        }
++
++        @Override
++        public void checkServerTrusted(X509Certificate[] arg0, String arg1)
++                        throws CertificateException {
++            // Nothing to do here
++        }
++
++        @Override
++        public X509Certificate[] getAcceptedIssuers() {
++            return new X509Certificate[0];
++        }
++    }
++}
+Index: source/org/jivesoftware/smack/ConnectionConfiguration.java
+===================================================================
+--- source/org/jivesoftware/smack/ConnectionConfiguration.java	(revision 1f79bc08199d75a1cc4f83d4de6f62b0906584aa)
++++ source/org/jivesoftware/smack/ConnectionConfiguration.java	(revision )
+@@ -24,6 +24,7 @@
+ import org.jivesoftware.smack.util.DNSUtil;
+ 
+ import javax.net.SocketFactory;
++import javax.net.ssl.SSLContext;
+ import javax.security.auth.callback.CallbackHandler;
+ import java.io.File;
+ 
+@@ -54,6 +55,7 @@
+     private String keystorePath;
+     private String keystoreType;
+     private String pkcs11Library;
++    private SSLContext customSSLContext;
+     private boolean verifyChainEnabled = false;
+     private boolean verifyRootCAEnabled = false;
+     private boolean selfSignedCertificateEnabled = false;
+@@ -83,8 +85,18 @@
+     private boolean sendPresence = true;
+     private boolean rosterLoadedAtLogin = true;
+     private SecurityMode securityMode = SecurityMode.enabled;
+-	
++
++    /**
++     *
++     */
++    private String[] enabledSSLProtocols;
++
++    /**
++     *
++     */
++    private String[] enabledSSLCiphers;
++
+-	// Holds the proxy information (such as proxyhost, proxyport, username, password etc)
++    // Holds the proxy information (such as proxyhost, proxyport, username, password etc)
+     protected ProxyInfo proxy;
+ 
+     /**
+@@ -380,6 +392,65 @@
+      */
+     public void setPKCS11Library(String pkcs11Library) {
+         this.pkcs11Library = pkcs11Library;
++    }
++
++    /**
++     * Gets the custom SSLContext previously set with {@link #setCustomSSLContext(javax.net.ssl.SSLContext)} for
++     * SSL sockets. This is null by default.
++     *
++     * @return the custom SSLContext or null.
++     */
++    public SSLContext getCustomSSLContext() {
++        return this.customSSLContext;
++    }
++
++    /**
++     * Sets a custom SSLContext for creating SSL sockets.
++     * <p>
++     * For more information on how to create a SSLContext see <a href=
++     * "http://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#X509TrustManager"
++     * >Java Secure Socket Extension (JSEE) Reference Guide: Creating Your Own X509TrustManager</a>
++     *
++     * @param context the custom SSLContext for new sockets
++     */
++    public void setCustomSSLContext(SSLContext context) {
++        this.customSSLContext = context;
++    }
++
++    /**
++     * Set the enabled SSL/TLS protocols.
++     *
++     * @param enabledSSLProtocols
++     */
++    public void setEnabledSSLProtocols(String[] enabledSSLProtocols) {
++        this.enabledSSLProtocols = enabledSSLProtocols;
++    }
++
++    /**
++     * Return the enabled SSL/TLS protocols.
++     *
++     * @return the enabled SSL/TLS protocols
++     */
++    public String[] getEnabledSSLProtocols() {
++        return enabledSSLProtocols;
++    }
++
++    /**
++     * Set the enabled SSL/TLS ciphers.
++     *
++     * @param enabledSSLCiphers the enabled SSL/TLS ciphers
++     */
++    public void setEnabledSSLCiphers(String[] enabledSSLCiphers) {
++        this.enabledSSLCiphers = enabledSSLCiphers;
++    }
++
++    /**
++     * Return the enabled SSL/TLS ciphers.
++     *
++     * @return the enabled SSL/TLS ciphers
++     */
++    public String[] getEnabledSSLCiphers() {
++        return enabledSSLCiphers;
+     }
+ 
+     /**
+Index: source/org/jivesoftware/smack/util/dns/HostAddress.java
+===================================================================
+--- source/org/jivesoftware/smack/util/dns/HostAddress.java	(revision )
++++ source/org/jivesoftware/smack/util/dns/HostAddress.java	(revision )
+@@ -0,0 +1,121 @@
++/**
++ *
++ * Copyright © 2013-2014 Florian Schmaus
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.jivesoftware.smack.util.dns;
++
++import org.jivesoftware.smack.SmackException.ConnectionException;
++
++public class HostAddress {
++    private final String fqdn;
++    private final int port;
++    private Exception exception;
++
++    /**
++     * Creates a new HostAddress with the given FQDN. The port will be set to the default XMPP client port: 5222
++     * 
++     * @param fqdn Fully qualified domain name.
++     * @throws IllegalArgumentException If the fqdn is null.
++     */
++    public HostAddress(String fqdn) {
++        // Set port to the default port for XMPP client communication
++        this(fqdn, 5222);
++    }
++
++    /**
++     * Creates a new HostAddress with the given FQDN. The port will be set to the default XMPP client port: 5222
++     * 
++     * @param fqdn Fully qualified domain name.
++     * @param port The port to connect on.
++     * @throws IllegalArgumentException If the fqdn is null or port is out of valid range (0 - 65535).
++     */
++    public HostAddress(String fqdn, int port) {
++        if (fqdn == null)
++            throw new IllegalArgumentException("FQDN is null");
++        if (port < 0 || port > 65535)
++            throw new IllegalArgumentException(
++                    "Port must be a 16-bit unsiged integer (i.e. between 0-65535. Port was: " + port);
++        if (fqdn.charAt(fqdn.length() - 1) == '.') {
++            this.fqdn = fqdn.substring(0, fqdn.length() - 1);
++        }
++        else {
++            this.fqdn = fqdn;
++        }
++        this.port = port;
++    }
++
++    public String getFQDN() {
++        return fqdn;
++    }
++
++    public int getPort() {
++        return port;
++    }
++
++    public void setException(Exception e) {
++        this.exception = e;
++    }
++
++    /**
++     * Retrieve the Exception that caused a connection failure to this HostAddress. Every
++     * HostAddress found in {@link ConnectionException} will have an Exception set,
++     * which can be retrieved with this method.
++     * 
++     * @return the Exception causing this HostAddress to fail
++     */
++    public Exception getException() {
++        return this.exception;
++    }
++
++    @Override
++    public String toString() {
++        return fqdn + ":" + port;
++    }
++
++    @Override
++    public boolean equals(Object o) {
++        if (this == o) {
++            return true;
++        }
++        if (!(o instanceof HostAddress)) {
++            return false;
++        }
++
++        final HostAddress address = (HostAddress) o;
++
++        if (!fqdn.equals(address.fqdn)) {
++            return false;
++        }
++        return port == address.port;
++    }
++
++    @Override
++    public int hashCode() {
++        int result = 1;
++        result = 37 * result + fqdn.hashCode();
++        return result * 37 + port;
++    }
++
++    public String getErrorMessage() {
++        String error;
++        if (exception == null) {
++            error = "No error logged";
++        }
++        else {
++            error = exception.getMessage();
++        }
++        return toString() + " Exception: " + error;
++    }
++}
+Index: source/org/jivesoftware/smack/util/StringUtils.java
+===================================================================
+--- source/org/jivesoftware/smack/util/StringUtils.java	(revision 1f79bc08199d75a1cc4f83d4de6f62b0906584aa)
++++ source/org/jivesoftware/smack/util/StringUtils.java	(revision )
+@@ -26,6 +26,7 @@
+ import java.text.DateFormat;
+ import java.text.ParseException;
+ import java.text.SimpleDateFormat;
++import java.util.Collection;
+ import java.util.Date;
+ import java.util.Random;
+ import java.util.TimeZone;
+@@ -558,5 +559,17 @@
+ 
+     private StringUtils() {
+         // Not instantiable.
++    }
++
++    public static String collectionToString(Collection<String> collection) {
++        StringBuilder sb = new StringBuilder();
++        for (String s : collection) {
++            sb.append(s);
++            sb.append(" ");
++        }
++        String res = sb.toString();
++        // Remove the trailing whitespace
++        res = res.substring(0, res.length() - 1);
++        return res;
+     }
  }
