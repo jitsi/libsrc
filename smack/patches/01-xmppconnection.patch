@@ -633,7 +633,7 @@ Index: source/org/jivesoftware/smack/util/dns/HostAddress.java
 @@ -0,0 +1,121 @@
 +/**
 + *
-+ * Copyright © 2013-2014 Florian Schmaus
++ * Copyright 2013-2014 Florian Schmaus
 + *
 + * Licensed under the Apache License, Version 2.0 (the "License");
 + * you may not use this file except in compliance with the License.
