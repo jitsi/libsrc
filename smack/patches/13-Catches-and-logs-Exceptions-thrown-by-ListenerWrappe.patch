@@ -1,0 +1,33 @@
+From 8539c1930d8858a37252ec433f90ce527331ae7c Mon Sep 17 00:00:00 2001
+From: paweldomas <pawel.domas@jitsi.org>
+Date: Wed, 4 Mar 2015 10:02:23 +0100
+Subject: [PATCH] Catches and logs Exceptions thrown by ListenerWrapper instead
+ of breaking listeners chain.
+
+---
+ .../smack_3_2_2/source/org/jivesoftware/smack/Connection.java    | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/smack/tags/smack_3_2_2/source/org/jivesoftware/smack/Connection.java b/smack/tags/smack_3_2_2/source/org/jivesoftware/smack/Connection.java
+index ab6a5eb..0e37388 100644
+--- a/smack/tags/smack_3_2_2/source/org/jivesoftware/smack/Connection.java
++++ b/smack/tags/smack_3_2_2/source/org/jivesoftware/smack/Connection.java
+@@ -813,8 +813,13 @@ public abstract class Connection {
+          * @param packet the packet which was sent or received.
+          */
+         public void notifyListener(Packet packet) {
+-            if (packetFilter == null || packetFilter.accept(packet)) {
+-                packetListener.processPacket(packet);
++            try {
++                if (packetFilter == null || packetFilter.accept(packet))
++                {
++                    packetListener.processPacket(packet);
++                }
++            } catch (Exception e) {
++                LOGGER.log(Level.SEVERE, e.getMessage(), e);
+             }
+         }
+     }
+-- 
+1.8.2.3
+
