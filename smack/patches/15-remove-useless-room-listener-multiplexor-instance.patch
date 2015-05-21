@@ -1,0 +1,19 @@
+--- smack/tags/smack_3_2_2/source/org/jivesoftware/smackx/muc/RoomListenerMultiplexor.java	(revision 8539c1930d8858a37252ec433f90ce527331ae7c)
++++ smack/tags/smack_3_2_2/source/org/jivesoftware/smackx/muc/RoomListenerMultiplexor.java	(revision a0232bfe01ca5f790f76e3e148a9d039cd49171c)
+@@ -143,6 +143,16 @@
+     private void cancel() {
+         connection.removeConnectionListener(this);
+         connection.removePacketListener(listener);
++        // Remove this instance from 'monitors' as it will become useless
++        // after reconnection. We have removed packet listeners and method
++        // init() will never be called again, so no packets will be processed.
++        synchronized (monitors) {
++            WeakReference<RoomListenerMultiplexor> listenerRef
++                = monitors.get(connection);
++            if (listenerRef.get() == this){
++                monitors.remove(connection);
++            }
++        }
+     }
+ 
+     /**
