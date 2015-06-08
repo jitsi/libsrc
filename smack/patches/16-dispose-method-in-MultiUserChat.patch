@@ -1,0 +1,41 @@
+Index: smack/tags/smack_3_2_2/source/org/jivesoftware/smackx/muc/MultiUserChat.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- smack/tags/smack_3_2_2/source/org/jivesoftware/smackx/muc/MultiUserChat.java	(revision 794d697b2feb30003c858de1c3af103b7cf3ec29)
++++ smack/tags/smack_3_2_2/source/org/jivesoftware/smackx/muc/MultiUserChat.java	(revision f6120e341a892aea8ef21a3159fb4ea5a28a7ada)
+@@ -2537,15 +2537,24 @@
+         }
+     }
+ 
+-    protected void finalize() throws Throwable {
+-        try {
+-            if (connection != null) {
++    /**
++     * Releases all resources and prepares this instance for garbage collection.
++     * Do not call when still in the room.
++     */
++    public void dispose() {
++        if (connection == null || roomListenerMultiplexor == null)
++            return;
++
+-                roomListenerMultiplexor.removeRoom(room);
+-                // Remove all the PacketListeners added to the connection by this chat
+-                for (PacketListener connectionListener : connectionListeners) {
+-                    connection.removePacketListener(connectionListener);
+-                }
+-            }
++        roomListenerMultiplexor.removeRoom(room);
++        // Remove all the PacketListeners added to the connection by this chat
++        for (PacketListener connectionListener : connectionListeners) {
++            connection.removePacketListener(connectionListener);
++        }
++    }
++
++    protected void finalize() throws Throwable {
++        try {
++            dispose();
+         }
+         catch (Exception e) {
+             // Do nothing
